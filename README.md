@@ -20,6 +20,8 @@ El progreso se guarda en `localStorage` del navegador; desde el panel puedes exp
 | Preguntas de concepto | 124 preguntas directas que cubren todas las viñetas del temario, en sesiones de 10 |
 | Modo Campaña | 12 escenarios arquitectónicos con restricciones de negocio |
 | Code & Permission Audit | 9 bloques de SQL / PySpark / YAML / JSON con un defecto que localizar |
+| Acciones de Ingeniero | 24 ejercicios sobre código real: 12 de hacer clic en la línea con el defecto y 12 de arrastrar palabras clave a sus huecos, con pistas progresivas, explicación, corrección y opción de ver la respuesta |
+| Juego: Incident Run | Juego en pixel art con cuatro zonas (una por dominio). Cada incidente es una pregunta del banco; los jefes plantean escenarios y auditorías. Lo que aciertas o fallas cuenta para el dominio por área y la deuda técnica |
 | Simulador de examen | 20 o 50 preguntas muestreadas según el peso de cada dominio, cronometrado, puntaje sobre 1000 (mínimo 700) y revisión completa |
 | Deuda técnica | Lo fallado se re-encola hasta lograr 2 aciertos seguidos |
 | Biblioteca | Temario literal, 14 tablas resumen, tabla de nombres que cambiaron, tácticas de examen, plan de 5 semanas y 100+ enlaces oficiales |
@@ -64,6 +66,9 @@ js/data/scenarios.js    Banco del Modo Campaña
 js/data/audits.js       Banco de Code & Permission Audit
 js/data/drills-*.js     Banco de preguntas de concepto (formato compacto)
 js/engine.js            Estado, economía DBU/SLA, rangos, racha, deuda técnica, muestreo y puntuación
+js/data/exercises.js    Ejercicios de Acciones de Ingeniero
+js/actions.js           Interfaz de Acciones de Ingeniero (clic en línea, arrastrar y soltar)
+js/game.js              Juego Incident Run (canvas, sprites definidos en código)
 js/highlight.js         Resaltado sintáctico (SQL, Python, YAML, JSON, CLI, KQL)
 js/app.js               Enrutado por hash, vistas y eventos
 ```

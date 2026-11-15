@@ -46,7 +46,7 @@
   const fresh = () => ({
     v: 1, dbu: CFG.dbuStart, sla: 100, xp: 0, incidents: 0,
     streak: { count: 0, last: null, best: 0 },
-    q: {}, debt: {}, exams: [], log: []
+    q: {}, debt: {}, exams: [], log: [], ex: {}, game: { best: 0, wins: 0 }
   });
 
   let S = load();
@@ -237,10 +237,27 @@
     return weightedScore(per);
   }
 
+  /* Acciones de Ingeniero: XP solo la primera vez que se resuelve; ver la respuesta no cuenta. */
+  function exerciseDone(id, r) {
+    touchStreak();
+    const prev = S.ex[id] || {};
+    let xp = 0;
+    if (r.solved && !prev.solved) xp = r.hints ? 15 : 30;
+    S.ex[id] = { solved: !!r.solved || !!prev.solved, hints: r.solved ? r.hints : (prev.hints || 0), tries: (prev.tries || 0) + r.tries, at: Date.now() };
+    S.xp += xp; save();
+    return xp;
+  }
+  function gameSave(zonesCleared, won) {
+    S.game = S.game || { best: 0, wins: 0 };
+    S.game.best = Math.max(S.game.best, zonesCleared);
+    if (won) S.game.wins++;
+    save();
+  }
+
   D.Engine = {
     CFG, RANKS, BANK, BY_ID, SKILLS, shuffle,
     get state() { return S; },
-    rank, streakAlive, answer, queue, skillQueue, debtQueue, mastery, skillMastery, readiness, buildExam, gradeExam,
+    rank, streakAlive, answer, queue, skillQueue, debtQueue, mastery, skillMastery, exerciseDone, gameSave, readiness, buildExam, gradeExam,
     debtCount: () => Object.keys(S.debt).length,
     reset() { S = fresh(); save(); },
     exportState: () => JSON.stringify(S, null, 2),

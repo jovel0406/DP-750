@@ -39,7 +39,7 @@
   }
 
   const ROUTES = [
-    ["panel", "Panel de control"], ["ruta", "Ruta de aprendizaje"], ["drill", "Preguntas de concepto"], ["campana", "Modo Campaña"], ["audit", "Code & Permission Audit"],
+    ["panel", "Panel de control"], ["ruta", "Ruta de aprendizaje"], ["drill", "Preguntas de concepto"], ["campana", "Modo Campaña"], ["audit", "Code & Permission Audit"], ["acciones", "Acciones de Ingeniero"], ["juego", "Juego: Incident Run"],
     ["examen", "Simulador de examen"], ["deuda", "Deuda técnica"], ["biblioteca", "Biblioteca de estudio"]
   ];
   function renderNav(route) {
@@ -423,12 +423,15 @@
   }
 
   /* ───────── Enrutado ───────── */
+  const modHooks = { refresh: () => { renderHud(); renderNav(currentRoute()); }, toast };
   const currentRoute = () => (location.hash.replace(/^#\//, "") || "panel");
   function route() {
     const r = currentRoute();
     session = null;
+    if (D.Game) D.Game.stop();
     renderHud(); renderNav(r);
     ({ panel: viewPanel, ruta: viewRoute, drill: () => viewLauncher("drill"), campana: () => viewLauncher("campaign"), audit: () => viewLauncher("audit"),
+       acciones: () => D.Actions.mount(view, modHooks), juego: () => D.Game.mount(view, modHooks),
        examen: viewExam, deuda: viewDebt, biblioteca: viewLibrary }[r] || viewPanel)();
     window.scrollTo(0, 0);
   }
