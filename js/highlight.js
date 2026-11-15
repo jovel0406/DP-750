@@ -7,7 +7,9 @@
     sql: words("select from where and or not in is null as join inner left right full outer cross on group by order having limit union intersect except all distinct create replace table view function catalog schema volume share recipient connection foreign external location storage credential streaming materialized refresh flow auto cdc into keys sequence stored scd type apply delete when then else end case merge using matched insert update set values alter column mask row filter drop add grant revoke to with options comment if exists return returns use show grants describe extended history optimize vacuum retain hours dry run zorder cluster partitioned partition over qualify constraint expect violation fail tblproperties timestamp of stream copy undrop desc asc interval source"),
     python: words("import from as def return if else elif for in while with lambda True False None and or not class try except finally raise pass"),
     yaml: words("true false null"),
-    json: words("true false null")
+    json: words("true false null"),
+    bash: words("databricks az git pip pytest"),
+    kql: words("where project order by desc asc summarize count ago extend take")
   };
   const TYPES = words("string bigint int decimal date boolean double float long timestamp_ntz binary");
   const FUNCS = words("current_user is_account_group_member is_member concat right left row_number secret current_timestamp count sum avg min max coalesce table_changes rand broadcast");
@@ -16,6 +18,8 @@
     sql: /(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`[^`]*`)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
     python: /(#[^\n]*)|((?:f|r|b)?"(?:[^"\\\n]|\\.)*"|(?:f|r|b)?'(?:[^'\\\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
     yaml: /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_.-]*)/g,
+    bash: /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_-]*)/g,
+    kql: /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(\b\d+[a-z]?\b)|([A-Za-z_][A-Za-z0-9_]*)/g,
     json: /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(-?\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g
   };
 
@@ -56,7 +60,7 @@
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   }
 
-  const LABEL = { sql: "Databricks SQL", python: "PySpark", yaml: "YAML", json: "JSON" };
+  const LABEL = { sql: "Databricks SQL", python: "PySpark", yaml: "YAML", json: "JSON", bash: "CLI", kql: "KQL (Log Analytics)" };
   function block(code, title) {
     const lines = code.text.split("\n").length;
     const gutter = Array.from({ length: lines }, (_, i) => i + 1).join("\n");

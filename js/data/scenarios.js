@@ -236,7 +236,8 @@ GRANT SELECT ON SHARE share_reaseguro TO RECIPIENT reaseguradora_ext;
 
 -- Revocar
 -- REVOKE SELECT ON SHARE share_reaseguro FROM RECIPIENT reaseguradora_ext;` },
-    refs: [{ t: "Delta Sharing", u: DOC + "delta-sharing/" }]
+    codeNote: "La guía del examen habla de **Delta Sharing**; la documentación actual de Azure Databricks presenta esta funcionalidad como **OpenSharing**. Los objetos (share, recipient) y la sintaxis SQL son los mismos.",
+    refs: [{ t: "Data sharing (OpenSharing / Delta Sharing)", u: DOC + "opensharing/" }]
   },
 
   /* ───────────── DOMINIO 3 ───────────── */
@@ -310,7 +311,7 @@ ALTER TABLE prod.silver.transacciones_lc
 -- Alternativa: dejar que Databricks elija las claves según las consultas
 -- ALTER TABLE prod.silver.transacciones_lc CLUSTER BY AUTO;` },
     codeNote: "`CLUSTER BY AUTO` requiere tablas managed de Unity Catalog con predictive optimization; confirma los requisitos vigentes en la documentación.",
-    refs: [{ t: "Liquid clustering", u: DOC + "delta/clustering" }, { t: "OPTIMIZE", u: DOC + "delta/optimize" }]
+    refs: [{ t: "Liquid clustering", u: DOC + "tables/clustering" }, { t: "OPTIMIZE", u: DOC + "tables/operations/optimize" }]
   },
   {
     id: "c-d3-03", mode: "campaign", domain: "d3",
@@ -348,7 +349,7 @@ WHERE cliente_id = 1042
   AND __START_AT <= '2026-03-03'
   AND (__END_AT > '2026-03-03' OR __END_AT IS NULL);` },
     codeNote: "Sintaxis anterior equivalente: `APPLY CHANGES INTO silver.dim_cliente FROM STREAM(…) KEYS … SEQUENCE BY … STORED AS SCD TYPE 2`. En Python: `dp.create_auto_cdc_flow(…)` (antes `dlt.apply_changes(…)`). El examen puede usar cualquiera de las dos.",
-    refs: [{ t: "Documentación de Azure Databricks (busca «AUTO CDC»)", u: DOC }]
+    refs: [{ t: "AUTO CDC", u: DOC + "ldp/cdc" }]
   },
 
   /* ───────────── DOMINIO 4 ───────────── */
@@ -404,7 +405,8 @@ targets:
 #   databricks bundle validate -t prod
 #   databricks bundle deploy   -t prod
 #   databricks bundle run      -t prod etl_diario` },
-    refs: [{ t: "Databricks Asset Bundles", u: DOC + "dev-tools/bundles/" }]
+    codeNote: "La guía del examen dice **Databricks Asset Bundles**; la documentación actual los llama **Declarative Automation Bundles**. Los comandos `databricks bundle …` y el archivo `databricks.yml` no cambian.",
+    refs: [{ t: "Bundles", u: DOC + "dev-tools/bundles/" }]
   },
   {
     id: "c-d4-02", mode: "campaign", domain: "d4",

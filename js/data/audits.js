@@ -114,7 +114,7 @@ GRANT SELECT      ON TABLE   prod.gold.ventas_diarias TO \`analistas_ventas\`;
 
 -- Revisar
 SHOW GRANTS ON SCHEMA prod.gold;` },
-    refs: [{ t: "Privilegios de Unity Catalog", u: DOCA + "data-governance/unity-catalog/manage-privileges/privileges" }]
+    refs: [{ t: "Permissions concepts", u: DOCA + "data-governance/unity-catalog/access-control/permissions-concepts" }]
   },
   {
     id: "a-d2-02", mode: "audit", domain: "d2",
@@ -234,7 +234,7 @@ AS SELECT *, current_timestamp() AS rechazado_en
 FROM STREAM(bronze_pedidos)
 WHERE pedido_id IS NULL OR importe < 0 OR importe IS NULL;` },
     codeNote: "Equivalente en Python: `@dp.expect_or_drop(\"importe_valido\", \"importe >= 0\")` con `from pyspark import pipelines as dp` (antes `import dlt` y `@dlt.expect_or_drop`).",
-    refs: [{ t: "Documentación de Azure Databricks (busca «pipeline expectations»)", u: DOCA }]
+    refs: [{ t: "Pipeline expectations", u: DOCA + "ldp/expectations" }]
   },
   {
     id: "a-d3-03", mode: "audit", domain: "d3",
@@ -368,6 +368,7 @@ VACUUM prod.gold.saldos;                 -- respeta la retención configurada
 -- Time travel
 SELECT * FROM prod.gold.saldos TIMESTAMP AS OF '2026-10-20';
 DESCRIBE HISTORY prod.gold.saldos;` },
-    refs: [{ t: "VACUUM", u: DOCA + "delta/vacuum" }, { t: "OPTIMIZE", u: DOCA + "delta/optimize" }]
+    codeNote: "Según la documentación, a partir de Databricks Runtime 18.0 la retención se controla con la propiedad de tabla `deletedFileRetentionDuration` (en tablas managed de Unity Catalog, desde 12.2 LTS), y las consultas de time travel anteriores a ese umbral se bloquean.",
+    refs: [{ t: "VACUUM", u: DOCA + "tables/operations/vacuum" }, { t: "OPTIMIZE", u: DOCA + "tables/operations/optimize" }]
   }
 ];

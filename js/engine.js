@@ -2,8 +2,28 @@
 (function () {
   const D = window.DP750;
   const KEY = "dp750-sim-v1";
-  const BANK = [...D.SCENARIOS, ...D.AUDITS];
+  /* Habilidad oficial (1.1 … 4.4) de los escenarios y auditorías. */
+  const SKILL_OF = {
+    "c-d1-01": "1.1", "c-d1-02": "1.1", "c-d1-03": "1.2", "a-d1-01": "1.2", "a-d1-02": "1.1",
+    "c-d2-01": "2.2", "c-d2-02": "2.1", "c-d2-03": "2.2", "a-d2-01": "2.1", "a-d2-02": "2.2",
+    "c-d3-01": "3.2", "c-d3-02": "3.1", "c-d3-03": "3.1", "a-d3-01": "3.2", "a-d3-02": "3.4", "a-d3-03": "3.3",
+    "c-d4-01": "4.3", "c-d4-02": "4.4", "c-d4-03": "4.4", "a-d4-01": "4.3", "a-d4-02": "4.4"
+  };
+  /* Las preguntas de concepto llegan en formato compacto (ver drills-d1.js). */
+  const seq = {};
+  const DRILLS = (D.DRILLS || []).map(r => {
+    const [skill, objective, title, question, ok, wrong, foundation, heuristic, lang, text, ref] = r;
+    seq[skill] = (seq[skill] || 0) + 1;
+    return {
+      id: "k-" + skill + "-" + String(seq[skill]).padStart(2, "0"), mode: "drill", domain: "d" + skill[0], skill,
+      objective, title, question,
+      options: [{ t: ok[0], ok: true, why: ok[1] }].concat(wrong.map(w => ({ t: w[0], ok: false, why: w[1], dbu: 60, sla: 8 }))),
+      foundation, heuristic, code: { lang, text }, refs: [{ t: ref[0], u: D.DOC + ref[1] }]
+    };
+  });
+  const BANK = [...D.SCENARIOS, ...D.AUDITS].map(q => Object.assign(q, { skill: SKILL_OF[q.id] })).concat(DRILLS);
   const BY_ID = Object.fromEntries(BANK.map(q => [q.id, q]));
+  const SKILLS = D.DOMAINS.flatMap(d => d.groups.map(g => Object.assign({ domain: d }, g)));
 
   const CFG = {
     dbuStart: 1000, dbuCredit: 15, dbuAfterIncident: 600,
@@ -11,16 +31,16 @@
     xpNew: 40, xpRepeat: 10, xpDebtBonus: 20, xpWrong: 25, xpIncident: 100,
     debtInterest: 2,          // aciertos consecutivos necesarios para saldar un concepto fallado
     debtDoubt: 1,             // aciertos necesarios si se acertó «con dudas»
-    examSecondsPerQuestion: 100, passScore: 700
+    examSecondsPerQuestion: 120, passScore: 700
   };
 
   const RANKS = [
     { xp: 0,   name: "Becario de Pipelines" },
-    { xp: 100, name: "Data Engineer Junior" },
-    { xp: 250, name: "Data Engineer" },
-    { xp: 420, name: "Senior Data Engineer" },
-    { xp: 620, name: "Staff Data Engineer" },
-    { xp: 820, name: "Principal Data Architect" }
+    { xp: 300,  name: "Data Engineer Junior" },
+    { xp: 900,  name: "Data Engineer" },
+    { xp: 1800, name: "Senior Data Engineer" },
+    { xp: 2900, name: "Staff Data Engineer" },
+    { xp: 4000, name: "Principal Data Architect" }
   ];
 
   const fresh = () => ({
@@ -111,7 +131,7 @@
       fx.notes.push("Concepto añadido a la deuda técnica: reaparecerá hasta lograr " + CFG.debtInterest + " aciertos seguidos.");
     }
 
-    S.dbu += fx.dbu; S.xp = Math.max(0, S.xp + fx.xp);
+    S.dbu = Math.min(CFG.dbuStart, S.dbu + fx.dbu); S.xp = Math.max(0, S.xp + fx.xp);
     S.sla = Math.max(0, Math.min(100, S.sla + fx.sla));
 
     if (S.dbu <= 0) {
@@ -132,13 +152,27 @@
   }
 
   /* Cola de entrenamiento: primero deuda técnica, luego no vistas, luego falladas, luego el resto. */
-  function queue(mode, domain) {
-    const pool = BANK.filter(q => q.mode === mode && (!domain || q.domain === domain));
-    const tier = q => S.debt[q.id] ? 0 : !S.q[q.id] ? 1 : S.q[q.id].last === false ? 2 : 3;
-    return shuffle(pool).sort((a, b) => tier(a) - tier(b));
+  const tier = q => S.debt[q.id] ? 0 : !S.q[q.id] ? 1 : S.q[q.id].last === false ? 2 : 3;
+  const prioritize = pool => shuffle(pool).sort((a, b) => tier(a) - tier(b));
+  function queue(mode, domain, limit) {
+    const list = prioritize(BANK.filter(q => q.mode === mode && (!domain || q.domain === domain)));
+    return limit ? list.slice(0, limit) : list;
+  }
+  /* Entrenamiento por habilidad: de lo conceptual a lo aplicado. */
+  function skillQueue(skill) {
+    const rank = { drill: 0, campaign: 1, audit: 2 };
+    return prioritize(BANK.filter(q => q.skill === skill)).sort((a, b) => (tier(a) - tier(b)) || (rank[a.mode] - rank[b.mode]));
   }
   function debtQueue() {
     return shuffle(Object.keys(S.debt).map(id => BY_ID[id]).filter(Boolean));
+  }
+  function skillMastery() {
+    return SKILLS.map(sk => {
+      const qs = BANK.filter(q => q.skill === sk.id);
+      const ok = qs.filter(q => S.q[q.id] && S.q[q.id].last === true).length;
+      return { skill: sk, total: qs.length, ok, seen: qs.filter(q => S.q[q.id]).length,
+        debt: qs.filter(q => S.debt[q.id]).length, pct: qs.length ? Math.round((ok / qs.length) * 100) : 0 };
+    });
   }
 
   /* Dominio por dominio: % de preguntas cuyo último intento fue correcto. */
@@ -165,8 +199,15 @@
     return den ? Math.round((num / den) * 1000) : 0;
   }
 
-  function buildExam() {
-    return shuffle(BANK).map(q => ({ id: q.id, order: shuffle(q.options.map((_, i) => i)), pick: null, flag: false }));
+  /* Muestra n preguntas respetando los pesos oficiales de cada dominio. */
+  function buildExam(n) {
+    const total = D.DOMAINS.reduce((a, d) => a + (d.min + d.max) / 2, 0);
+    const parts = D.DOMAINS.map(d => { const x = n * ((d.min + d.max) / 2) / total; return { d, want: Math.floor(x), frac: x - Math.floor(x), w: d.min }; });
+    let left = n - parts.reduce((a, x) => a + x.want, 0);
+    parts.slice().sort((a, b) => (b.frac - a.frac) || (b.w - a.w)).forEach(x => { if (left > 0) { x.want++; left--; } });
+    let picked = [];
+    parts.forEach(x => { picked = picked.concat(shuffle(BANK.filter(q => q.domain === x.d.id)).slice(0, x.want)); });
+    return shuffle(picked).map(q => ({ id: q.id, order: shuffle(q.options.map((_, i) => i)), pick: null, flag: false }));
   }
 
   function gradeExam(items, secondsUsed) {
@@ -197,9 +238,9 @@
   }
 
   D.Engine = {
-    CFG, RANKS, BANK, BY_ID, shuffle,
+    CFG, RANKS, BANK, BY_ID, SKILLS, shuffle,
     get state() { return S; },
-    rank, streakAlive, answer, queue, debtQueue, mastery, readiness, buildExam, gradeExam,
+    rank, streakAlive, answer, queue, skillQueue, debtQueue, mastery, skillMastery, readiness, buildExam, gradeExam,
     debtCount: () => Object.keys(S.debt).length,
     reset() { S = fresh(); save(); },
     exportState: () => JSON.stringify(S, null, 2),

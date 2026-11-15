@@ -379,8 +379,8 @@ DP750.CHEATS = [
     domain: "d3", title: "Ingesta: qué herramienta elegir",
     head: ["Herramienta", "Mejor para", "Límite / trampa"],
     rows: [
-      ["Auto Loader (cloudFiles)", "Archivos que llegan continuamente, gran volumen, esquema que evoluciona", "Requiere schemaLocation al inferir esquema y checkpoint en el writeStream"],
-      ["COPY INTO", "Cargas batch idempotentes de un número moderado de archivos, en SQL", "Escala peor con muchísimos archivos; sin evolución de esquema tan rica"],
+      ["Auto Loader (cloudFiles)", "Archivos que llegan continuamente, gran volumen (hasta miles de millones de archivos), esquema que evoluciona", "En notebooks requiere schemaLocation al inferir esquema y checkpoint en el writeStream; en pipelines de Lakeflow los gestiona la plataforma"],
+      ["COPY INTO", "Cargas batch en SQL, reintentables e idempotentes", "Para ingesta continua y a gran escala de archivos, la documentación recomienda Auto Loader"],
       ["Lakeflow Connect", "Conectores administrados a SaaS y bases de datos", "Elige esto cuando el enunciado pide «mínimo código / conector administrado»"],
       ["Structured Streaming + Event Hubs", "Eventos en tiempo real", "Event Hubs expone un endpoint compatible con Kafka"],
       ["Azure Data Factory", "Orquestación y copia desde orígenes on-premises/variados", "Orquesta; la transformación pesada sigue en Databricks"],
@@ -391,12 +391,12 @@ DP750.CHEATS = [
     domain: "d3", title: "Organización física: particionado vs clustering",
     head: ["Técnica", "Cuándo", "Advertencia"],
     rows: [
-      ["Liquid clustering (CLUSTER BY)", "Opción recomendada para tablas nuevas; columnas de filtro de alta cardinalidad; patrones de consulta cambiantes", "Incompatible con particionado y con ZORDER en la misma tabla"],
-      ["Particionado (PARTITIONED BY)", "Tablas muy grandes con columna de baja cardinalidad", "Databricks recomienda no particionar tablas pequeñas (orientación: por debajo de ~1 TB). Sobre-particionar genera archivos pequeños"],
+      ["Liquid clustering (CLUSTER BY)", "Recomendado para todas las tablas nuevas; funciona con columnas de baja y alta cardinalidad; las claves pueden cambiarse sin reescribir los datos", "Incompatible con particionado y con ZORDER en la misma tabla"],
+      ["Particionado (PARTITIONED BY)", "Solo tablas muy grandes (100 TB o más), y aun así probando antes liquid clustering", "Menos de 1 TB: no particionar. Cada partición debería tener al menos 1 GB"],
       ["Z-order (OPTIMIZE … ZORDER BY)", "Tablas existentes particionadas sin liquid clustering", "No es incremental: reescribe; cambiar columnas implica re-optimizar"],
       ["Deletion vectors", "Acelerar DELETE/UPDATE/MERGE evitando reescribir archivos completos", "Los datos se eliminan físicamente al reescribir (OPTIMIZE / REORG … PURGE) y VACUUM"]
     ],
-    note: "El umbral de ~1 TB es una orientación de la documentación de Databricks, no un límite técnico. Verifica la redacción vigente."
+    note: "Recomendación de la documentación: menos de 1 TB, no particionar; de 1 a 100 TB, liquid clustering en lugar de particionado; 100 TB o más, el particionado podría ayudar, pero se recomienda probar primero liquid clustering."
   },
   {
     domain: "d3", title: "Expectations en Lakeflow Spark Declarative Pipelines",
@@ -429,7 +429,7 @@ DP750.CHEATS = [
       ["databricks bundle run -t <target> <recurso>", "Ejecuta un job o pipeline desplegado"],
       ["databricks bundle destroy -t <target>", "Elimina los recursos desplegados por el bundle"]
     ],
-    note: "mode: development antepone un prefijo a los recursos y pausa schedules/triggers; mode: production valida condiciones más estrictas. Usar development en el target prod es una trampa clásica."
+    note: "mode: development antepone el prefijo `[dev <usuario>]` a los recursos y pausa schedules y triggers; mode: production valida la configuración de producción. La documentación actual llama a los bundles **Declarative Automation Bundles**; la guía del examen, Databricks Asset Bundles."
   },
   {
     domain: "d4", title: "Diagnóstico en Spark UI: síntoma → causa → acción",

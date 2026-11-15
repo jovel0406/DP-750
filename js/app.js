@@ -5,7 +5,7 @@
   const view = $("#view"), hud = $("#hud"), nav = $("#nav");
   const DOM = Object.fromEntries(D.DOMAINS.map(d => [d.id, d]));
   const LETTERS = ["A", "B", "C", "D", "E"];
-  const MODE_LABEL = { campaign: "Campaña", audit: "Code & Permission Audit", debt: "Deuda técnica" };
+  const MODE_LABEL = { campaign: "Campaña", audit: "Code & Permission Audit", debt: "Deuda técnica", drill: "Preguntas de concepto", skill: "Ruta de aprendizaje" };
 
   let session = null;   // sesión de entrenamiento en curso
   let exam = null;      // examen en curso o resultado
@@ -39,7 +39,7 @@
   }
 
   const ROUTES = [
-    ["panel", "Panel de control"], ["campana", "Modo Campaña"], ["audit", "Code & Permission Audit"],
+    ["panel", "Panel de control"], ["ruta", "Ruta de aprendizaje"], ["drill", "Preguntas de concepto"], ["campana", "Modo Campaña"], ["audit", "Code & Permission Audit"],
     ["examen", "Simulador de examen"], ["deuda", "Deuda técnica"], ["biblioteca", "Biblioteca de estudio"]
   ];
   function renderNav(route) {
@@ -56,9 +56,10 @@
       ((100 - b.pct) * (b.domain.min + b.domain.max)) - ((100 - a.pct) * (a.domain.min + a.domain.max)))[0];
     const debt = E.debtCount();
     let next;
-    if (debt) next = { t: `Tienes ${debt} concepto${debt > 1 ? "s" : ""} en deuda técnica. Sáldalos antes de avanzar: es donde más puntos recuperas.`, a: "#/deuda", l: "Pagar deuda" };
-    else if (seen < total) next = { t: `Te quedan ${total - seen} casos sin ver. El dominio con mayor impacto pendiente es «${weakest.domain.name}».`, a: "#/campana", l: "Continuar campaña" };
-    else if (weakest.pct < 100) next = { t: `Refuerza «${weakest.domain.name}» (${weakest.pct}% de dominio, pesa ${weakest.domain.min}–${weakest.domain.max}% del examen).`, a: "#/campana", l: "Entrenar" };
+    if (!seen && !debt) next = { t: "Empieza por la Ruta de aprendizaje: cada habilidad oficial tiene una mini-lección y sus preguntas, de lo conceptual a lo aplicado.", a: "#/ruta", l: "Abrir la ruta" };
+    else if (debt) next = { t: `Tienes ${debt} concepto${debt > 1 ? "s" : ""} en deuda técnica. Sáldalos antes de avanzar: es donde más puntos recuperas.`, a: "#/deuda", l: "Pagar deuda" };
+    else if (seen < total) next = { t: `Te quedan ${total - seen} casos sin ver. El dominio con mayor impacto pendiente es «${weakest.domain.name}».`, a: "#/ruta", l: "Continuar la ruta" };
+    else if (weakest.pct < 100) next = { t: `Refuerza «${weakest.domain.name}» (${weakest.pct}% de dominio, pesa ${weakest.domain.min}–${weakest.domain.max}% del examen).`, a: "#/ruta", l: "Entrenar" };
     else next = { t: "Banco dominado. Valida con el simulador cronometrado y repasa las tablas resumen.", a: "#/examen", l: "Ir al simulador" };
 
     const readyColor = ready >= 700 ? "var(--ok)" : ready >= 500 ? "var(--warn)" : "var(--bad)";
@@ -118,21 +119,24 @@
 
   /* ───────── Lanzador de entrenamiento ───────── */
   function viewLauncher(mode) {
-    const isAudit = mode === "audit";
     const m = E.mastery();
     const count = id => E.BANK.filter(q => q.mode === mode && (!id || q.domain === id)).length;
+    const head = {
+      campaign: ["Modo Campaña", "Casos de estudio con restricciones de negocio. Lee las restricciones antes que las opciones: en el DP-750 la respuesta correcta es la que cumple <em>todas</em>."],
+      audit: ["Code &amp; Permission Audit", "Revisa bloques reales de SQL, PySpark, YAML y JSON y localiza el defecto: permisos (<code>GRANT</code>), calidad (<code>EXPECT</code>), streaming (<code>cloudFiles</code>), bundles y mantenimiento Delta."],
+      drill: ["Preguntas de concepto", "Preguntas directas, una por cada punto del temario oficial, redactadas a partir de la documentación de Azure Databricks. Sesiones de 10 que priorizan tu deuda técnica y lo que aún no has visto."]
+    }[mode];
+    const limit = mode === "drill" ? 10 : "";
+    const sub = n => mode === "drill" ? `${n} preguntas en el banco · sesión de 10` : `${n} casos`;
     view.innerHTML = `
-      <div class="page-head"><h1>${isAudit ? "Code &amp; Permission Audit" : "Modo Campaña"}</h1>
-      <p>${isAudit
-        ? "Revisa bloques reales de SQL, PySpark, YAML y JSON y localiza el defecto: permisos (<code>GRANT</code>), calidad (<code>EXPECT</code>), streaming (<code>cloudFiles</code>), bundles y mantenimiento Delta."
-        : "Casos de estudio con restricciones de negocio. Lee las restricciones antes que las opciones: en el DP-750 la respuesta correcta es la que cumple <em>todas</em>."}</p></div>
+      <div class="page-head"><h1>${head[0]}</h1><p>${head[1]}</p></div>
       <section class="card">
         <h2>Elige el alcance</h2>
         <div class="launch">
-          <button class="tile" data-act="start" data-mode="${mode}" data-domain="">
-            <strong>Todos los dominios</strong><span>${count()} casos · prioriza deuda técnica y casos no vistos</span></button>
-          ${m.map(x => `<button class="tile" data-act="start" data-mode="${mode}" data-domain="${x.domain.id}" style="--c:${x.domain.color}">
-            <strong>${esc(x.domain.name)}</strong><span>${count(x.domain.id)} casos · peso ${x.domain.min}–${x.domain.max}% · dominio ${x.pct}%</span></button>`).join("")}
+          <button class="tile" data-act="start" data-mode="${mode}" data-domain="" data-limit="${limit}">
+            <strong>Todos los dominios</strong><span>${sub(count())}</span></button>
+          ${m.map(x => `<button class="tile" data-act="start" data-mode="${mode}" data-domain="${x.domain.id}" data-limit="${limit}" style="--c:${x.domain.color}">
+            <strong>${esc(x.domain.name)}</strong><span>${sub(count(x.domain.id))} · peso ${x.domain.min}–${x.domain.max}% · dominio ${x.pct}%</span></button>`).join("")}
         </div>
       </section>
       <section class="card">
@@ -141,14 +145,38 @@
           <li><b>Fundamento técnico</b> — por qué la arquitectura o el código correcto es el óptimo.</li>
           <li><b>Autopsia de distractores</b> — por qué falla cada opción incorrecta, una por una.</li>
           <li><b>Heurística de examen</b> — la regla rápida para reconocer el patrón.</li>
-          <li><b>Código de referencia</b> — fragmento en PySpark, Databricks SQL o configuración.</li>
+          <li><b>Código de referencia</b> — fragmento en PySpark, Databricks SQL o configuración, con enlace a la documentación oficial.</li>
         </ol>
         <p class="hint">Atajos: <kbd>1</kbd>–<kbd>4</kbd> o <kbd>A</kbd>–<kbd>D</kbd> para elegir, <kbd>Enter</kbd> para confirmar y avanzar.</p>
       </section>`;
   }
 
-  function startSession(mode, domain) {
-    const list = mode === "debt" ? E.debtQueue() : E.queue(mode, domain || null);
+  /* ───────── Ruta de aprendizaje por habilidad oficial ───────── */
+  function viewRoute() {
+    const sm = Object.fromEntries(E.skillMastery().map(x => [x.skill.id, x]));
+    view.innerHTML = `
+      <div class="page-head"><h1>Ruta de aprendizaje</h1>
+        <p>Las 12 habilidades de la guía oficial (skills measured as of ${esc(D.GUIDE.asOf)}). Para cada una: lee la mini-lección, repasa los puntos que evalúa el examen y entrena hasta dominarla.</p></div>
+      ${D.DOMAINS.map(d => `
+        <section class="card route" style="--c:${d.color}">
+          <h2><span class="route-dom">${esc(d.name)}</span><span class="w">${d.min}–${d.max}% del examen</span></h2>
+          ${d.groups.map(g => { const x = sm[g.id]; const done = x.pct === 100;
+            return `<details class="skill ${done ? "done" : ""}">
+              <summary><span class="sid">${g.id}</span><span class="sname"><b>${esc(g.es)}</b><small>${esc(g.title)}</small></span>
+                <span class="sprog">${bar(x.pct, d.color, g.es)}<small>${x.ok}/${x.total} dominadas${x.debt ? ` · <b class="warn">${x.debt} en deuda</b>` : ""}</small></span></summary>
+              <div class="skill-body">
+                <div class="grid two">
+                  <div><h3>Mini-lección</h3><ul class="brief">${g.brief.map(b => `<li>${rich(b)}</li>`).join("")}</ul></div>
+                  <div><h3>Lo que evalúa el examen <small>(texto oficial)</small></h3><ul class="official">${g.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>
+                    <h3>Documentación oficial</h3><p class="doclinks">${g.docs.map(x => `<a href="${D.DOC + x[1]}" target="_blank" rel="noopener">${esc(x[0])}</a>`).join(" · ")}</p></div>
+                </div>
+                <div class="row end"><button class="btn primary" data-act="start" data-mode="skill" data-domain="${g.id}" data-limit="">Entrenar esta habilidad (${x.total} preguntas)</button></div>
+              </div></details>`; }).join("")}
+        </section>`).join("")}`;
+  }
+
+  function startSession(mode, domain, limit) {
+    const list = mode === "debt" ? E.debtQueue() : mode === "skill" ? E.skillQueue(domain) : E.queue(mode, domain || null, +limit || 0);
     if (!list.length) { toast("No hay casos en este alcance."); return; }
     session = { mode, list, idx: 0, right: 0, wrong: 0, dbu: 0, cur: null };
     loadQuestion();
@@ -163,7 +191,7 @@
   /* Bloque de pregunta (compartido por entrenamiento, examen y revisión). */
   function questionBody(q) {
     return `
-      <p class="ctx">${rich(q.context)}</p>
+      ${q.context ? `<p class="ctx">${rich(q.context)}</p>` : ""}
       ${q.constraints ? `<div class="constraints"><h3>Restricciones</h3><ul>${q.constraints.map(c => `<li>${rich(c)}</li>`).join("")}</ul></div>` : ""}
       ${q.audit ? block(q.audit, "Código bajo auditoría") : ""}
       <p class="ask">${rich(q.question)}</p>`;
@@ -194,7 +222,7 @@
     const last = session.idx === n - 1;
     view.innerHTML = `
       <div class="q-head">
-        <div class="crumbs"><span class="mode">${esc(MODE_LABEL[session.mode])}</span>${chip(d)}${inDebt ? '<span class="chip debt">En deuda técnica</span>' : ""}</div>
+        <div class="crumbs"><span class="mode">${esc(MODE_LABEL[session.mode])}</span>${chip(d)}<span class="chip">Habilidad ${q.skill}</span>${inDebt ? '<span class="chip debt">En deuda técnica</span>' : ""}</div>
         <div class="prog"><span>Caso ${session.idx + 1} de ${n}</span>${bar(pct(session.idx + (fx ? 1 : 0), n), "var(--accent)", "Progreso de la sesión")}</div>
       </div>
       <article class="card q">
@@ -261,22 +289,24 @@
   function viewExam() {
     if (exam && exam.result) return renderExamResult();
     if (exam) return renderExam();
-    const n = E.BANK.length, secs = n * E.CFG.examSecondsPerQuestion;
+    const per = E.CFG.examSecondsPerQuestion;
     view.innerHTML = `
-      <div class="page-head"><h1>Simulador de examen cronometrado</h1><p>Preguntas de los cuatro dominios mezcladas, sin retroalimentación hasta el final.</p></div>
+      <div class="page-head"><h1>Simulador de examen cronometrado</h1><p>Preguntas de los cuatro dominios, muestreadas según su peso oficial y sin retroalimentación hasta el final.</p></div>
       <section class="card">
-        <div class="stats"><div><b>${n}</b><span>Preguntas</span></div><div><b>${fmtTime(secs)}</b><span>Tiempo</span></div><div><b>${E.CFG.passScore}</b><span>Mínimo / 1000</span></div><div><b>4</b><span>Dominios</span></div></div>
+        <div class="stats"><div><b>${E.BANK.length}</b><span>Preguntas en el banco</span></div><div><b>${per / 60} min</b><span>Por pregunta</span></div><div><b>${E.CFG.passScore}</b><span>Mínimo / 1000</span></div><div><b>4</b><span>Dominios</span></div></div>
         <ul class="rules">
+          <li>Cada simulacro extrae una muestra distinta del banco, proporcional al peso de cada dominio.</li>
           <li>Puedes navegar entre preguntas, cambiar respuestas y marcarlas para revisión.</li>
           <li>Al terminar (o agotarse el tiempo) verás el puntaje, el desglose por dominio y la revisión completa en 4 capas.</li>
           <li>Las preguntas falladas u omitidas pasan a la deuda técnica. El simulacro no consume DBU.</li>
         </ul>
-        <p class="hint">El puntaje se estima ponderando cada dominio por el punto medio de su peso oficial. Microsoft usa una puntuación escalada cuya fórmula no es pública, y el número de preguntas y la duración del examen real pueden variar: confírmalos en la página oficial de la certificación.</p>
-        <div class="row end"><button class="btn primary" data-act="exam-start">Iniciar simulacro</button></div>
+        <p class="hint">El puntaje se estima ponderando cada dominio por el punto medio de su peso oficial. Microsoft usa una puntuación escalada cuya fórmula no es pública, y la guía oficial no indica el número de preguntas ni la duración del examen real: confírmalos al reservar. Haz también el Practice Assessment oficial enlazado en la Biblioteca.</p>
+        <div class="row end"><button class="btn" data-act="exam-start" data-n="20">Simulacro rápido · 20 preguntas · ${fmtTime(20 * per)}</button>
+          <button class="btn primary" data-act="exam-start" data-n="50">Simulacro completo · 50 preguntas · ${fmtTime(50 * per)}</button></div>
       </section>`;
   }
-  function examStart() {
-    const items = E.buildExam();
+  function examStart(n) {
+    const items = E.buildExam(n);
     exam = { items, idx: 0, left: items.length * E.CFG.examSecondsPerQuestion, total: items.length * E.CFG.examSecondsPerQuestion, result: null };
     clearInterval(timerId);
     timerId = setInterval(() => {
@@ -349,7 +379,7 @@
 
   /* ───────── Biblioteca ───────── */
   const PLAN = [
-    ["Semana 1 · Fundamentos y entorno", "Guía oficial completa + dominio 1. Crea un workspace de prueba: catálogo, esquema, volumen, tabla managed y externa. Compara los tipos de cómputo en la práctica."],
+    ["Semana 1 · Fundamentos y entorno", "Guía oficial completa + dominio 1 en la Ruta de aprendizaje. Crea un workspace de prueba: catálogo, esquema, volumen, tabla managed y externa. Compara los tipos de cómputo en la práctica."],
     ["Semana 2 · Gobierno", "Dominio 2. Practica GRANT/REVOKE con un segundo usuario, un row filter, un column mask, un secret scope y un share de Delta Sharing. Memoriza la tabla de privilegios."],
     ["Semana 3 · Datos (30–35%)", "Dominio 3. Auto Loader, COPY INTO, MERGE, AUTO CDC con SCD 1 y 2, expectations y liquid clustering. Es uno de los dos bloques que más pesa: dedícale el doble."],
     ["Semana 4 · Pipelines (30–35%)", "Dominio 4. Lakeflow Jobs con dependencias y reintentos, repair run, un bundle desplegado en dos targets, lectura de Spark UI, OPTIMIZE y VACUUM."],
@@ -367,12 +397,15 @@
     const tabs = [["temario", "Temario oficial"], ["tablas", "Tablas resumen"], ["tacticas", "Tácticas y plan"], ["fuentes", "Fuentes oficiales"]];
     let body = "";
     if (libTab === "temario") {
-      body = `<p class="note">Dominios y pesos según la guía de estudio oficial del DP-750. Las viñetas están resumidas y traducidas (no son cita literal). Al generar esta app, distintas fuentes atribuían a la guía fechas de «skills measured» diferentes (marzo y octubre de 2026): comprueba la fecha y el detalle vigentes en la <a href="${D.RESOURCES[0].items[0].u}" target="_blank" rel="noopener">guía oficial</a>.</p>
-        ${D.DOMAINS.map(d => `<section class="card syl" style="--c:${d.color}"><h2>${esc(d.name)} <span class="w">${d.min}–${d.max}%</span></h2><p class="en">${esc(d.en)}</p>
-          <div class="grid two">${d.groups.map(g => `<div><h3>${esc(g.title)}</h3><ul>${g.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}</div></section>`).join("")}`;
+      body = `<p class="note">Texto literal de la <a href="${D.GUIDE.url}" target="_blank" rel="noopener">guía de estudio oficial</a>: «Skills measured as of ${esc(D.GUIDE.asOf)}» (página actualizada el ${esc(D.GUIDE.updated)}). La guía advierte de que las viñetas ilustran cómo se evalúa cada habilidad y que pueden entrar temas relacionados, incluidas funciones en Preview de uso común. Compruébala antes del examen por si cambia.</p>
+        ${D.DOMAINS.map(d => `<section class="card syl" style="--c:${d.color}"><h2>${esc(d.en)} <span class="w">${d.min}–${d.max}%</span></h2><p class="en">${esc(d.name)}</p>
+          <div class="grid two">${d.groups.map(g => `<div><h3>${g.id} · ${esc(g.title)}</h3><ul>${g.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}</div></section>`).join("")}`;
     } else if (libTab === "tablas") {
       const list = D.CHEATS.filter(c => cheatFilter === "all" || c.domain === cheatFilter);
       body = `<div class="filters"><button class="${cheatFilter === "all" ? "on" : ""}" data-act="cheat" data-d="all">Todas</button>${D.DOMAINS.map(d => `<button class="${cheatFilter === d.id ? "on" : ""}" data-act="cheat" data-d="${d.id}">${esc(d.short)}</button>`).join("")}</div>
+        ${cheatFilter === "all" ? `<section class="card"><h2>Nombres que cambiaron</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre anterior</th><th>Nombre en la documentación actual</th><th>Nota</th></tr></thead>
+          <tbody>${D.RENAMES.map(r => `<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>
+          <p class="note">El examen puede usar cualquiera de las dos formas. La guía oficial (marzo de 2026) usa: Lakeflow Spark Declarative Pipelines, Lakeflow Jobs, Databricks Asset Bundles, Delta Sharing y AI/BI Genie.</p></section>` : ""}
         ${list.map(c => `<section class="card"><h2>${esc(c.title)} ${chip(DOM[c.domain])}</h2><div class="tbl-wrap"><table class="tbl"><thead><tr>${c.head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
           <tbody>${c.rows.map(r => `<tr>${r.map((x, i) => `<td>${i === 0 ? "<b>" + rich(x) + "</b>" : rich(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${c.note ? `<p class="note">${rich(c.note)}</p>` : ""}</section>`).join("")}`;
     } else if (libTab === "tacticas") {
@@ -380,7 +413,7 @@
         <section class="card"><h2>Plan de estudio sugerido (5 semanas)</h2><ol class="plan">${PLAN.map(p => `<li><b>${esc(p[0])}</b><span>${esc(p[1])}</span></li>`).join("")}</ol>
         <p class="hint">Es una propuesta orientativa; ajústala a tu experiencia previa con Spark y Azure. La práctica en un workspace real es insustituible.</p></section>`;
     } else {
-      body = `<p class="note">Solo se enlazan dominios oficiales de Microsoft. Estos enlaces no pudieron abrirse desde el entorno donde se generó la app: si alguno devuelve error, busca el título en Microsoft Learn. La documentación de Databricks cambia con frecuencia; ante cualquier discrepancia, manda la fuente oficial.</p>
+      body = `<p class="note">Solo se enlaza learn.microsoft.com. Todos los enlaces se comprobaron en noviembre de 2026. La documentación de Azure Databricks cambia con frecuencia: ante cualquier discrepancia con esta app, manda la fuente oficial.</p>
         ${D.RESOURCES.map(g => `<section class="card"><h2>${esc(g.group)}</h2><ul class="links">${g.items.map(i => `<li><a href="${esc(i.u)}" target="_blank" rel="noopener">${esc(i.t)}</a><span>${esc(i.n)}</span></li>`).join("")}</ul></section>`).join("")}`;
     }
     view.innerHTML = `
@@ -395,21 +428,23 @@
     const r = currentRoute();
     session = null;
     renderHud(); renderNav(r);
-    ({ panel: viewPanel, campana: () => viewLauncher("campaign"), audit: () => viewLauncher("audit"),
+    ({ panel: viewPanel, ruta: viewRoute, drill: () => viewLauncher("drill"), campana: () => viewLauncher("campaign"), audit: () => viewLauncher("audit"),
        examen: viewExam, deuda: viewDebt, biblioteca: viewLibrary }[r] || viewPanel)();
     window.scrollTo(0, 0);
   }
 
   /* ───────── Eventos ───────── */
   document.addEventListener("click", e => {
+    const link = e.target.closest('a[href^="#/"]');
+    if (link && link.getAttribute("href") === (location.hash || "#/panel")) { route(); return; }   // misma ruta: no hay hashchange
     const el = e.target.closest("[data-act]");
     if (!el || el.tagName === "INPUT") return;
     const a = el.dataset.act;
-    if (a === "start") startSession(el.dataset.mode, el.dataset.domain);
+    if (a === "start") startSession(el.dataset.mode, el.dataset.domain, el.dataset.limit);
     else if (a === "pick" && session && !session.cur.fx) { session.cur.pick = +el.dataset.oi; renderSession(); }
     else if (a === "confirm") confirmAnswer();
     else if (a === "next") nextQuestion();
-    else if (a === "exam-start") examStart();
+    else if (a === "exam-start") examStart(+el.dataset.n || 50);
     else if (a === "exam-pick") { exam.items[exam.idx].pick = +el.dataset.oi; renderExam(); }
     else if (a === "exam-prev") { exam.idx--; renderExam(); window.scrollTo(0, 0); }
     else if (a === "exam-next") { exam.idx++; renderExam(); window.scrollTo(0, 0); }
