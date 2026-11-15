@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Databricks DP-750 Tactical Simulator</title>
+  <meta name="description" content="Simulador táctico para preparar el examen Microsoft DP-750: Implementing Data Engineering Solutions Using Azure Databricks.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1220'/%3E%3Cpath d='M6 12l10-5 10 5-10 5zM6 17l10 5 10-5M6 22l10 5 10-5' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#view">Saltar al contenido</a>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M4 11l12-6 12 6-12 6zM4 16.5l12 6 12-6M4 22l12 6 12-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <div><strong>DP-750</strong><span>Tactical Simulator</span></div>
+      </div>
+      <nav id="nav" aria-label="Secciones"></nav>
+      <p class="side-foot">Proyecto de estudio independiente. No afiliado a Microsoft ni a Databricks.</p>
+    </aside>
+    <div class="main">
+      <header class="hud" id="hud" aria-label="Estado operativo"></header>
+      <main id="view" tabindex="-1"></main>
+    </div>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/data/domains.js"></script>
+  <script src="js/data/scenarios.js"></script>
+  <script src="js/data/audits.js"></script>
+  <script src="js/data/drills-d1.js"></script>
+  <script src="js/data/drills-d2.js"></script>
+  <script src="js/data/drills-d3a.js"></script>
+  <script src="js/data/drills-d3b.js"></script>
+  <script src="js/data/drills-d4a.js"></script>
+  <script src="js/data/drills-d4b.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/highlight.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
