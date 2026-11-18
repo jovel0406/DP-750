@@ -4,6 +4,8 @@ Aplicación web de estudio para el examen **Microsoft DP-750: Implementing Data 
 
 > Proyecto de estudio independiente. No está afiliado a Microsoft ni a Databricks y no contiene preguntas reales del examen.
 
+> **También en este repositorio:** [Redação Brasil — Academia & Simulador CELPE-Bras](redacao-brasil/README.md) (carpeta `redacao-brasil/`, build en `redacao-brasil/dist/`).
+
 ## Cómo usarla
 
 - **Local:** abre `index.html` en el navegador (funciona con `file://`).
