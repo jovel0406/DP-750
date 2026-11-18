@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ——— Temas: papel (padrão), sépia (leitura noturna suave) e noturno ——— */
+:root {
+  --paper: 250 249 246;   /* #FAF9F6 */
+  --paper2: 243 240 233;  /* #F3F0E9 */
+  --ink: 24 24 27;        /* #18181B */
+  --muted: 98 98 106;
+  --rule: 24 24 27;
+  --selva: 27 67 50;      /* #1B4332 */
+  --ocre: 180 83 9;       /* #B45309 — ocre um tom mais escuro para contraste AA sobre papel */
+  --petroleo: 15 76 92;   /* #0F4C5C */
+  --alerta: 159 18 57;
+  color-scheme: light;
+}
+:root[data-theme='sepia'] {
+  --paper: 244 236 216;
+  --paper2: 235 225 200;
+  --ink: 59 47 35;
+  --muted: 112 96 76;
+  --rule: 59 47 35;
+  --selva: 38 84 60;
+  --ocre: 160 82 18;
+  --petroleo: 26 82 98;
+  --alerta: 150 32 52;
+}
+:root[data-theme='noturno'] {
+  --paper: 22 22 20;
+  --paper2: 32 31 28;
+  --ink: 232 228 218;
+  --muted: 160 155 145;
+  --rule: 232 228 218;
+  --selva: 116 190 150;
+  --ocre: 234 170 70;
+  --petroleo: 110 186 204;
+  --alerta: 244 120 140;
+  color-scheme: dark;
+}
+
+html, body { background: rgb(var(--paper)); color: rgb(var(--ink)); }
+body {
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  .hairline { border-color: rgb(var(--rule) / 0.18); }
+  .rule-strong { border-color: rgb(var(--rule) / 0.85); }
+  .kicker {
+    @apply font-sans text-[11px] font-semibold uppercase tracking-[0.18em];
+  }
+  .headline { @apply font-serif font-semibold tracking-tight leading-[1.05]; }
+  .prose-ed { @apply font-serif text-[1.075rem] leading-[1.75]; }
+  .prose-ed p + p { text-indent: 1.4em; }
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 font-sans text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed;
+    border-color: rgb(var(--ink));
+  }
+  .btn-ink { @apply btn; background: rgb(var(--ink)); color: rgb(var(--paper)); }
+  .btn-ink:hover:not(:disabled) { background: rgb(var(--selva)); border-color: rgb(var(--selva)); }
+  .btn-line { @apply btn; background: transparent; color: rgb(var(--ink)); }
+  .btn-line:hover:not(:disabled) { background: rgb(var(--ink) / 0.06); }
+  .btn-ghost { @apply inline-flex items-center gap-1.5 font-sans text-sm text-muted hover:text-ink transition-colors; }
+  .chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 font-sans text-[11px] font-semibold uppercase tracking-wider border;
+  }
+  .field {
+    @apply w-full bg-transparent border px-3 py-2 font-sans text-sm focus:outline-none;
+    border-color: rgb(var(--rule) / 0.3);
+  }
+  .field:focus { border-color: rgb(var(--petroleo)); }
+  .dropcap::first-letter {
+    @apply font-serif font-bold float-left mr-2 text-selva;
+    font-size: 3.6em; line-height: 0.82; margin-top: 0.08em;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+/* Folha de redação pautada */
+.folha {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(2rem - 1px),
+    rgb(var(--petroleo) / 0.14) calc(2rem - 1px),
+    rgb(var(--petroleo) / 0.14) 2rem
+  );
+  background-attachment: local;
+  line-height: 2rem;
+}
+
+/* marcações de erro e anotação */
+mark.err { background: rgb(var(--alerta) / 0.14); color: inherit; border-bottom: 2px solid rgb(var(--alerta)); padding: 0 1px; }
+mark.ok { background: rgb(var(--selva) / 0.14); color: inherit; border-bottom: 2px solid rgb(var(--selva)); padding: 0 1px; }
+mark.con { background: rgb(var(--ocre) / 0.16); color: inherit; border-bottom: 1px dotted rgb(var(--ocre)); padding: 0 1px; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgb(var(--rule) / 0.2); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fadeUp .35s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .fade-up { animation: none; } }
+
+@media print {
+  nav, .no-print { display: none !important; }
+}
